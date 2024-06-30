@@ -7,9 +7,11 @@
 
 Servo myservo;
 RTC_DS3231 rtc;
-const int alarminute1 = 10; 
-const int alarminute2 = 15;
-volatile int startedSeconds;
+
+
+const int alarminute1 = 2; 
+const int alarminute2 = 3;
+DateTime startedMinutes;
 volatile int degrees[] = {0,90,180};
 volatile int index = 0;
 volatile bool goBack = false;
@@ -26,25 +28,26 @@ void turnServo() {
   index = goBack ? index - 1 : index + 1;
 }
 
-void setAlarm1(DateTime now) {
-  if(abs(now.second() - startedSeconds) % alarminute1 == 0){
+void setAlarm1(long passedTime) {
+  if(passedTime % (alarminute1*60) == 0){
     digitalWrite(13, HIGH);
+    Serial.println("Alarm 1");
     turnServo();
+    delay(1000);
   }
 }
 
 
 
-void setAlarm2(DateTime now) {
-  if(abs(now.second() - startedSeconds) % alarminute2 == 0){
-    Serial.println("Alarm 2");
+void setAlarm2(long passedTime) {
+  if(passedTime % (alarminute2*60) == 0){
     digitalWrite(13, LOW);
+    Serial.println("Alarm 2");
   }
 }
 
 void setup() {
   Serial.begin(9600);
-  Serial.println("Hello World");
   myservo.attach(9);
   pinMode(13, OUTPUT);
   digitalWrite(13, LOW);
@@ -58,16 +61,17 @@ void setup() {
     Serial.println("RTC lost power, let's set the time!");
     rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
   }
-  startedSeconds = rtc.now().second();
+  startedMinutes = rtc.now();
+  index = -1;
+  turnServo();
 }
 
 void loop() {
   DateTime now = rtc.now();
-
-  Serial.println(now.second());
-
-  setAlarm1(now);
-  setAlarm2(now);
-
-  delay(1000);
+  long elapse = (now - startedMinutes).totalseconds();
+  Serial.println(elapse);
+  
+  setAlarm1(elapse);
+  setAlarm2(elapse);
+  
 }
